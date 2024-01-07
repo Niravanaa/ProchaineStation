@@ -50,13 +50,19 @@ jobs:
         run: git push origin v${{ steps.semantic_release.outputs.next_release_version }}
         if: success() && steps.semantic_release.outputs.next_release_version != ''
 
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       # Publish build zip file as a release asset
       - name: Upload Build as Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./build/ProchaineStation.zip
           asset_name: ProchaineStation.zip
           asset_content_type: application/zip
