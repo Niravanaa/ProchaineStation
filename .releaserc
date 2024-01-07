@@ -3,13 +3,6 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    "@semantic-release/github",
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "npx game-ci/unity-builder@v4 --targetPlatform=StandaloneWindows64 --projectPath=./Prochaine\\ Station/ && npx actions/upload-artifact@v3 --name=ProchaineStation --path=build",
-        "publishCmd": "npx actions/upload-release-asset@v1 --upload_url=$GITHUB_URL_TO_UPLOAD --asset_path=./build/ProchaineStation.zip --asset_name=ProchaineStation.zip --asset_content_type=application/zip"
-      }
-    ]
+    "@semantic-release/github"
   ]
 }
