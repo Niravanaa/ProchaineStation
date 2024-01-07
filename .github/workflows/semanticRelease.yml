@@ -30,7 +30,6 @@ jobs:
       - name: Check if new version found
         id: check_new_version
         run: echo "${{ steps.semantic_release.outputs.next_release_version }}"
-        if: steps.semantic_release.outputs.next_release_version != ''
 
       - name: Get release details if new version found
         id: get_release_details
