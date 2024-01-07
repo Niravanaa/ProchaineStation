@@ -13,17 +13,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Semantic Release Action for generating release notes and determining the next version
-      - name: Semantic Release
-        uses: cycloidio/semantic-release-github-action@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '14'
+
+      - name: Install semantic-release
+        run: npm install -g semantic-release@17 @semantic-release/git@10
+
+      - name: Semantic Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Unity Windows Build Action
       - name: Unity Windows Builder
         uses: GameCI/unity-builder@v2
         with:
-          unityVersion: 2021.1.0f1 # Replace with your Unity version
+          unityVersion: 2022.3.16f1
           targetPlatform: windows
           buildName: MyUnityProject_Windows
           buildPath: Builds/Windows
@@ -46,6 +53,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.repository.releases[0].upload_url }}
-          asset_path: ./BuildZip/MyUnityProject_Windows.zip # Replace with your build file path
-          asset_name: MyUnityProject_Windows.zip # Replace with your build file name
-          asset_content_type: application/zip # Adjust content type if necessary
+          asset_path: ./BuildZip/ProchaineStation.zip
+          asset_name: ProchaineStation.zip
+          asset_content_type: application/zip
