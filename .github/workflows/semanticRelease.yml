@@ -1,4 +1,4 @@
-name: Semantic Release
+name: Semantic Release and Unity Build
 
 on:
   push:
@@ -6,21 +6,46 @@ on:
       - main
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '14'
-
-      - name: Install semantic-release
-        run: npm install -g semantic-release@17 @semantic-release/git@10
-
+      # Semantic Release Action for generating release notes and determining the next version
       - name: Semantic Release
-        run: npx semantic-release
+        uses: cycloidio/semantic-release-github-action@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Unity Windows Build Action
+      - name: Unity Windows Builder
+        uses: GameCI/unity-builder@v2
+        with:
+          unityVersion: 2021.1.0f1 # Replace with your Unity version
+          targetPlatform: windows
+          buildName: MyUnityProject_Windows
+          buildPath: Builds/Windows
+          outputPath: BuildZip
+
+      # Create a tag with the next version
+      - name: Create Tag
+        run: git tag -a v${{ steps.semantic_release.outputs.next_release_version }} -m "Version v${{ steps.semantic_release.outputs.next_release_version }}"
+        if: success() && steps.semantic_release.outputs.next_release_version != ''
+
+      # Push the new tag to the repository
+      - name: Push Tag
+        run: git push origin v${{ steps.semantic_release.outputs.next_release_version }}
+        if: success() && steps.semantic_release.outputs.next_release_version != ''
+
+      # Publish build zip file as a release asset
+      - name: Upload Build as Release Asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.repository.releases[0].upload_url }}
+          asset_path: ./BuildZip/MyUnityProject_Windows.zip # Replace with your build file path
+          asset_name: MyUnityProject_Windows.zip # Replace with your build file name
+          asset_content_type: application/zip # Adjust content type if necessary
