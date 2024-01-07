@@ -19,10 +19,42 @@ jobs:
           node-version: '14'
 
       - name: Install semantic-release
-        run: npm install -g semantic-release@17 @semantic-release/git@10 @semantic-release/exec
+        run: npm install -g semantic-release@17 @semantic-release/git@10
 
       - name: Semantic Release
-        id: semantic_release
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneWindows64
+          projectPath: ./Prochaine Station/
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ProchaineStation
+          path: build
+
+      # Get the latest release details
+      - name: Get Latest Release
+        id: get_latest_release
+        run: |
+          latest_release=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          echo "::set-output name=upload_url::$(echo $latest_release | jq -r '.upload_url')"
+          echo "::set-output name=release_id::$(echo $latest_release | jq -r '.id')"
+
+      # Publish build zip file as a release asset
+      - name: Upload Build as Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
+          asset_path: ./build/ProchaineStation.zip
+          asset_name: ProchaineStation.zip
+          asset_content_type: application/zip
