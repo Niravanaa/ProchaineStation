@@ -22,11 +22,27 @@ jobs:
         run: npm install -g semantic-release@17 @semantic-release/git@10
 
       - name: Semantic Release
+        id: semantic_release
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: game-ci/unity-builder@v4
+      - name: Check if new version found
+        id: check_new_version
+        run: echo "${{ steps.semantic_release.outputs.next_release_version }}"
+        if: steps.semantic_release.outputs.next_release_version != ''
+
+      - name: Get release details if new version found
+        id: get_release_details
+        if: steps.check_new_version.outputs.next_release_version != ''
+        run: |
+          release_url="https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.semantic_release.outputs.next_release_version }}"
+          upload_url=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $release_url | jq -r '.upload_url')
+          echo "::set-output name=upload_url::$upload_url"
+
+      - name: Unity Build
+        if: steps.check_new_version.outputs.next_release_version != '' # Only runs if a new version is found
+        uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -35,34 +51,13 @@ jobs:
           targetPlatform: StandaloneWindows64
           projectPath: ./Prochaine Station/
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ProchaineStation
-          path: build
-
-      # Create a tag with the next version
-      - name: Create Tag
-        run: git tag -a v${{ steps.semantic_release.outputs.next_release_version }} -m "Version v${{ steps.semantic_release.outputs.next_release_version }}"
-        if: success() && steps.semantic_release.outputs.next_release_version != ''
-
-      # Push the new tag to the repository
-      - name: Push Tag
-        run: git push origin v${{ steps.semantic_release.outputs.next_release_version }}
-        if: success() && steps.semantic_release.outputs.next_release_version != ''
-
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      # Publish build zip file as a release asset
       - name: Upload Build as Release Asset
+        if: steps.check_new_version.outputs.next_release_version != '' # Only runs if a new version is found
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ steps.get_release_details.outputs.upload_url }}
           asset_path: ./build/ProchaineStation.zip
           asset_name: ProchaineStation.zip
           asset_content_type: application/zip
