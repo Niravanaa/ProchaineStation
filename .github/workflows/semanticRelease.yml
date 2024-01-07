@@ -26,37 +26,3 @@ jobs:
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check if new version found
-        id: check_new_version
-        run: echo "${{ steps.semantic_release.outputs.next_release_version }}"
-
-      - name: Get release details if new version found
-        id: get_release_details
-        if: steps.check_new_version.outputs.next_release_version != ''
-        run: |
-          release_url="https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.semantic_release.outputs.next_release_version }}"
-          upload_url=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $release_url | jq -r '.upload_url')
-          echo "::set-output name=upload_url::$upload_url"
-
-      - name: Unity Build
-        if: steps.check_new_version.outputs.next_release_version != '' # Only runs if a new version is found
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: StandaloneWindows64
-          projectPath: ./Prochaine Station/
-
-      - name: Upload Build as Release Asset
-        if: steps.check_new_version.outputs.next_release_version != '' # Only runs if a new version is found
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release_details.outputs.upload_url }}
-          asset_path: ./build/ProchaineStation.zip
-          asset_name: ProchaineStation.zip
-          asset_content_type: application/zip
