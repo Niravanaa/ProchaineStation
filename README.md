@@ -19,7 +19,7 @@
 
 ## Description
 
-Prochaine Station is a psychological horror adventure game that takes players on a surreal journey through a metro system over five days. As players progress through each day, they encounter mundane tasks intermixed with increasingly bizarre and unsettling events. The game focuses on immersive storytelling, unconventional mechanics, and an eerie atmosphere to deliver a unique narrative-driven experience.
+Prochaine Station is a psychological horrosr adventure game that takes players on a surreal journey through a metro system over five days. As players progress through each day, they encounter mundane tasks intermixed with increasingly bizarre and unsettling events. The game focuses on immersive storytelling, unconventional mechanics, and an eerie atmosphere to deliver a unique narrative-driven experience.
 
 ## Features
 
