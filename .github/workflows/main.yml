@@ -16,7 +16,8 @@ jobs:
       - name: Determine Latest Tag and Release
         id: check_tag_release
         run: |
-          latest_tag=$(git describe --abbrev=0 --tags)
+          git fetch -a
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
           echo "::set-output name=latest_tag::$latest_tag"
 
           release_info=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
