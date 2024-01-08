@@ -64,9 +64,15 @@ jobs:
         with:
           tag_name: ${{ steps.previoustag.outputs.tag }}
           release_name: ${{ steps.previoustag.outputs.tag }}
-          body: ${{ steps.read_changelog.outputs.changelog }}
+          body: |
+            ${{ steps.read_changelog.outputs.changelog }}
           draft: false
           prerelease: false
+
+      - name: Delete Changelog File
+        if: steps.determine_action.outputs.action == 'create_release'
+        run: |
+          rm ./docs/CHANGELOG.md
 
       - uses: game-ci/unity-builder@v4
         if: steps.determine_action.outputs.action == 'create_release'
