@@ -19,31 +19,26 @@ jobs:
           # Download the latest artifact
           curl -L -o ProchaineStation.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
 
-      - name: Get Latest Release Info
-        id: get_release
+      - name: Get Latest Release ID
+        id: get_release_id
         run: |
-          release_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.url')
+          release_id=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.id')
 
-          echo "::set-output name=release_url::$release_url"
-
-      - name: Get Existing Assets
-        id: get_assets
-        if: steps.get_release.outputs.release_url != null
-        run: |
-          assets_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
-          "${{ steps.get_release.outputs.release_url }}/assets" | jq -r '.[].url')
-
-          echo "::set-output name=assets_url::$assets_url"
+          echo "::set-output name=release_id::$release_id"
 
       - name: Delete Existing Assets
-        if: steps.get_assets.outputs.assets_url != null
+        if: steps.get_release_id.outputs.release_id != null
         run: |
-          assets_url="${{ steps.get_assets.outputs.assets_url }}"
+          release_id="${{ steps.get_release_id.outputs.release_id }}"
+          assets_url="https://api.github.com/repos/${{ github.repository }}/releases/${release_id}/assets"
 
-          while IFS= read -r asset_url; do
+          assets=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "$assets_url" | jq -r '.[].url')
+
+          for asset_url in $assets; do
             curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$asset_url"
-          done <<< "$assets_url"
+          done
 
       - name: Get Latest Release Upload URL
         id: get_release_upload_url
