@@ -1,0 +1,36 @@
+name: Upload Latest Artifact to Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Latest Artifact
+        run: |
+          # Fetch the latest artifact URL
+          artifact_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/artifacts" | jq -r '.artifacts[0].archive_download_url')
+
+          # Download the latest artifact
+          curl -L -o ProchaineStation.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
+
+      - name: Get Latest Release Info
+        id: get_release
+        run: |
+          release_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.upload_url')
+
+          echo "::set-output name=release_upload_url::$release_url"
+
+      - name: Upload Artifact to Release
+        run: |
+          release_upload_url=$(echo "${{ steps.get_release.outputs.release_upload_url }}" | sed 's/{?name,label}//')
+
+          # Upload the artifact to the release
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/zip" \
+          --data-binary "@ProchaineStation.zip" "$release_upload_url?name=ProchaineStation.zip"
