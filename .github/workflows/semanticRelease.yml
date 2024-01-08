@@ -67,13 +67,6 @@ jobs:
 
           tag_name=$(echo "$release_info" | jq -r '.tag_name')
           echo "::set-output name=tag_name::$tag_name"
-      
-      - name: Delete Old Release Assets
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ github.token }}
-          tag: ${{ steps.get_release_id.outputs.tag_name }}
-          assets: '*'
 
       - name: Get Latest Release Upload URL
         id: get_release_upload_url
