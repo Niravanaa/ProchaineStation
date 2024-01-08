@@ -44,13 +44,14 @@ jobs:
       - name: Determine Action
         id: determine_action
         run: |
-          if [ "${{ steps.previoustag.outputs.tag }}" != "${{ steps.check_tag_release.outputs.latest_release_tag }}" ]; then
+          if [ "${{ steps.previoustag.outputs.tag }}" != "${{ steps.check_tag_release.outputs.tag_name }}" ]; then
             echo "::set-output name=action::create_release"
           else
             echo "::set-output name=action::upload_to_existing_release"
           fi
 
       - name: Read Changelog File
+        if: steps.determine_action.outputs.action == 'create_release'
         id: read_changelog
         run: |
           changelog=$(cat ./docs/CHANGELOG.md)
