@@ -19,17 +19,39 @@ jobs:
           # Download the latest artifact
           curl -L -o ProchaineStation.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
 
-      - name: Get Latest Release Info
-        id: get_release
+      - name: Get Latest Release ID
+        id: get_release_id
         run: |
-          release_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          release_id=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.id')
+
+          echo "::set-output name=release_id::$release_id"
+
+      - name: Delete Existing Assets
+        if: steps.get_release_id.outputs.release_id != null
+        run: |
+          release_id="${{ steps.get_release_id.outputs.release_id }}"
+          assets_url="https://api.github.com/repos/${{ github.repository }}/releases/${release_id}/assets"
+
+          assets=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "$assets_url" | jq -r '.[] | .id')
+
+          for asset_id in $assets; do
+            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$assets_url/$asset_id"
+          done
+
+      - name: Get Latest Release Upload URL
+        id: get_release_upload_url
+        run: |
+          release_upload_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.upload_url')
 
-          echo "::set-output name=release_upload_url::$release_url"
+          echo "::set-output name=release_upload_url::$release_upload_url"
 
       - name: Upload Artifact to Release
+        if: steps.get_release_upload_url.outputs.release_upload_url != null
         run: |
-          release_upload_url=$(echo "${{ steps.get_release.outputs.release_upload_url }}" | sed 's/{?name,label}//')
+          release_upload_url=$(echo "${{ steps.get_release_upload_url.outputs.release_upload_url }}" | sed 's/{?name,label}//')
 
           # Upload the artifact to the release
           curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/zip" \
