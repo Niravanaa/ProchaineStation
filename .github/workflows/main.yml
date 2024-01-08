@@ -27,18 +27,18 @@ jobs:
 
           echo "::set-output name=release_id::$release_id"
 
-      - name: Delete Existing Assets
-        if: steps.get_release_id.outputs.release_id != null
+      - name: Get Latest Tag Name
+        id: get_latest_tag
         run: |
-          release_id="${{ steps.get_release_id.outputs.release_id }}"
-          assets_url="https://api.github.com/repos/${{ github.repository }}/releases/${release_id}/assets"
-
-          assets=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
-          "$assets_url" | jq -r '.[].url')
-
-          for asset_url in $assets; do
-            curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$asset_url"
-          done
+          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo "::set-output name=latest_tag::$latest_tag"
+      
+      - name: Delete Old Release Assets
+        uses: mknejp/delete-release-assets@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ steps.get_latest_tag.outputs.latest_tag }}
+          assets: '*'
 
       - name: Get Latest Release Upload URL
         id: get_release_upload_url
