@@ -65,7 +65,7 @@ jobs:
           tag_name: ${{ steps.previoustag.outputs.tag }}
           release_name: ${{ steps.previoustag.outputs.tag }}
           body: |
-            ${{ join(steps.read_changelog.outputs.changelog.split('\n'), '\n') }}
+            ${{ steps.read_changelog.outputs.changelog.replace('\n', '  \n') }}
           draft: false
           prerelease: false
 
