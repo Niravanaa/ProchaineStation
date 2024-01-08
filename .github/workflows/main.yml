@@ -48,13 +48,6 @@ jobs:
             echo "::set-output name=action::create_release"
           fi
 
-      - name: Read Changelog File
-        if: steps.determine_action.outputs.action == 'create_release'
-        id: read_changelog
-        run: |
-          changelog=$(cat ./docs/CHANGELOG.md)
-          echo "::set-output name=changelog::$changelog"
-
       - name: Create Release
         if: steps.determine_action.outputs.action == 'create_release'
         id: create_release
@@ -64,8 +57,7 @@ jobs:
         with:
           tag_name: ${{ steps.previoustag.outputs.tag }}
           release_name: ${{ steps.previoustag.outputs.tag }}
-          body: |
-            ${{ steps.read_changelog.outputs.changelog.replace('\n', '  \n') }}
+          body_path: ./docs/CHANGELOG.md
           draft: false
           prerelease: false
 
