@@ -63,6 +63,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
-          asset_path: ProchaineStation.zip
+          asset_path: /home/runner/work/ProchaineStation/ProchaineStation/build/ProchaineStation.zip
           asset_name: ProchaineStation.zip
           asset_content_type: application/zip
