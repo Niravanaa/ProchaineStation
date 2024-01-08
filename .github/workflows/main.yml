@@ -30,17 +30,15 @@ jobs:
 
           echo "::set-output name=release_id::$release_id"
 
-      - name: Get Latest Tag Name
-        id: get_latest_tag
-        run: |
-          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
-          echo "::set-output name=latest_tag::$latest_tag"
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
       
       - name: Delete Old Release Assets
         uses: mknejp/delete-release-assets@v1
         with:
           token: ${{ github.token }}
-          tag: ${{ steps.get_latest_tag.outputs.latest_tag }}
+          tag: ${{ steps.previoustag.outputs.tag }}
           assets: '*'
 
       - name: Get Latest Release Upload URL
