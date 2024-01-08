@@ -38,7 +38,7 @@ jobs:
         uses: mknejp/delete-release-assets@v1
         with:
           token: ${{ github.token }}
-          tag: ${{ steps.get_release_id.outputs.release_id }}
+          tag: ${{ steps.get_release_id.outputs.tag_name }}
           assets: '*'
 
       - name: Get Latest Release Upload URL
