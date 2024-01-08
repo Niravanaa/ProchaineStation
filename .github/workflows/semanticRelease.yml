@@ -54,6 +54,10 @@ jobs:
           name: ProchaineStation
           path: build
 
+      - name: Check Downloaded Artifact
+        run: |
+          ls -l ${{ github.workspace }}/build
+
       - name: Get Latest Release
         id: get_latest_release
         run: |
