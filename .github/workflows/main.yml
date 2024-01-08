@@ -46,9 +46,6 @@ jobs:
         run: |
           if [ "${{ steps.previoustag.outputs.tag }}" != "${{ steps.check_tag_release.outputs.tag_name }}" ]; then
             echo "::set-output name=action::create_release"
-          else
-            echo "::set-output name=action::upload_to_existing_release"
-          fi
 
       - name: Read Changelog File
         if: steps.determine_action.outputs.action == 'create_release'
@@ -87,6 +84,7 @@ jobs:
           path: build
 
       - name: Download Latest Artifact
+        if: steps.determine_action.outputs.action == 'create_release'
         run: |
           # Fetch the latest artifact URL
           artifact_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
@@ -96,6 +94,7 @@ jobs:
           curl -L -o ProchaineStation.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
 
       - name: Get Latest Release Upload URL
+        if: steps.determine_action.outputs.action == 'create_release'
         id: get_release_upload_url
         run: |
           release_upload_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
@@ -104,6 +103,7 @@ jobs:
           echo "::set-output name=release_upload_url::$release_upload_url"
 
       - name: Upload Artifact to Release
+        if: steps.determine_action.outputs.action == 'create_release'
         run: |
           release_upload_url=$(echo "${{ steps.get_release_upload_url.outputs.release_upload_url }}" | sed 's/{?name,label}//')
           tag_name="${{ steps.previoustag.outputs.tag }}"
