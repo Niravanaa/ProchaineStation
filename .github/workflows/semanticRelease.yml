@@ -47,30 +47,53 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         
-      - name: Download Artifact
-        id: download_artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ProchaineStation
-          path: build
-
-      - name: Check Downloaded Artifact
+      - name: Download Latest Artifact
         run: |
-          ls -l ${{ github.workspace }}/build
+          # Fetch the latest artifact URL
+          artifact_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/artifacts" | jq -r '.artifacts[0].archive_download_url')
 
-      - name: Get Latest Release
-        id: get_latest_release
+          # Download the latest artifact
+          curl -L -o ProchaineStation.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
+
+      - name: Get Latest Release ID
+        id: get_release_id
         run: |
-          latest_release=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-          echo "::set-output name=upload_url::$(echo $latest_release | jq -r '.upload_url')"
-          echo "::set-output name=release_id::$(echo $latest_release | jq -r '.id')"
+          release_info=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest")
 
-      - name: Upload Build as Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          release_id=$(echo "$release_info" | jq -r '.id')
+          echo "::set-output name=release_id::$release_id"
+
+          tag_name=$(echo "$release_info" | jq -r '.tag_name')
+          echo "::set-output name=tag_name::$tag_name"
+      
+      - name: Delete Old Release Assets
+        uses: mknejp/delete-release-assets@v1
         with:
-          upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
-          asset_path: ${{ steps.download_artifact.outputs.download-path }}/ProchaineStation.zip
-          asset_name: ProchaineStation.zip
-          asset_content_type: application/zip
+          token: ${{ github.token }}
+          tag: ${{ steps.get_release_id.outputs.tag_name }}
+          assets: '*'
+
+      - name: Get Latest Release Upload URL
+        id: get_release_upload_url
+        run: |
+          release_upload_url=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.upload_url')
+
+          echo "::set-output name=release_upload_url::$release_upload_url"
+
+      - name: Upload Artifact to Release
+        if: steps.get_release_upload_url.outputs.release_upload_url != null
+        run: |
+          release_upload_url=$(echo "${{ steps.get_release_upload_url.outputs.release_upload_url }}" | sed 's/{?name,label}//')
+      
+          # Get tag name
+          tag_name="${{ steps.get_release_id.outputs.tag_name }}"
+      
+          # Rename artifact file with tag name
+          mv ProchaineStation.zip "ProchaineStation-${tag_name}.zip"
+      
+          # Upload the renamed artifact to the release
+          curl -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/zip" \
+          --data-binary "@ProchaineStation-${tag_name}.zip" "$release_upload_url?name=ProchaineStation-${tag_name}.zip"
