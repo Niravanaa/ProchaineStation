@@ -46,6 +46,7 @@ jobs:
         run: |
           if [ "${{ steps.previoustag.outputs.tag }}" != "${{ steps.check_tag_release.outputs.tag_name }}" ]; then
             echo "::set-output name=action::create_release"
+          fi
 
       - name: Read Changelog File
         if: steps.determine_action.outputs.action == 'create_release'
